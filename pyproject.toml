@@ -47,6 +47,11 @@ bug_reports = "https://github.com/we-like-parsers/pegen/issues"
 requires = ["setuptools>=61.2", "wheel", "setuptools_scm[toml]>=3.4.3"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]  # list of folders that contain the packages (["."] by default)
+include = ["pegen", "xsh_parser"]  # package names should match these glob patterns (["*"] by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
 [tool.setuptools_scm]
 
 [tool.black]

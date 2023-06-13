@@ -2,34 +2,30 @@
 
 @class XonshParser
 
-@subheader'''
-from pegen.xsh.subhead import ParserBase as Parser, Load, Store, Del, Target
-from typing import List, Tuple, TypeVar, Union, NoReturn, Callable, Literal, Iterator
+
+@header'''
+import sys, ast
+from xsh_parser.parser import Parser, Load, Store, Del, Target, memoize, memoize_left_rec, logger
+from typing import List, Tuple, Union, NoReturn, Literal, Optional, Any
 import itertools
 
 def parse_file(
     path: str,
     py_version: Optional[tuple]=None,
-    token_stream_factory: Optional[
-        Callable[[Callable[[], str]], Iterator[tokenize.TokenInfo]]
-    ] = None,
     verbose:bool = False,
 ) -> ast.Module:
     """Parse a file."""
-    return XonshParser.parse_file(path, py_version, token_stream_factory, verbose)
+    return XonshParser.parse_file(path, py_version, verbose)
 
 
 def parse_string(
     source: str,
-    mode: Union[Literal["eval"], Literal["exec"]],
+    mode: Literal["eval", "exec"],
     py_version: Optional[tuple]=None,
-    token_stream_factory: Optional[
-        Callable[[Callable[[], str]], Iterator[tokenize.TokenInfo]]
-    ] = None,
     verbose:bool = False,
 ) -> Any:
     """Parse a string."""
-    return XonshParser.parse_string(source, mode, py_version, token_stream_factory, verbose)
+    return XonshParser.parse_string(source, mode, py_version, verbose)
 '''
 
 

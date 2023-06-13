@@ -3,13 +3,36 @@ import enum
 import io
 import os
 import sys
-import tokenize
+import token
+from . import tokenize
+from .tokenizer import Tokenizer
+from abc import ABC, abstractmethod
 from typing import (
-    Any, List, Tuple, TypeVar, Union, NoReturn, Optional, Callable, Literal, Iterator
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+    Any,
+    List,
+    Tuple,
+    TypeVar,
+    Union,
+    NoReturn,
+    Optional,
+    Callable,
+    Literal,
+    Iterator,
 )
 
-from pegen.parser import Parser
-from pegen.tokenizer import Tokenizer
+from pegen.tokenizer import Mark, Tokenizer, exact_token_types
+
+T = TypeVar("T")
+P = TypeVar("P", bound="Parser")
+F = TypeVar("F", bound=Callable[..., Any])
 
 # Singleton ast nodes, created once for efficiency
 Load = ast.Load()
@@ -54,29 +77,286 @@ class Target(enum.Enum):
     DEL_TARGETS = enum.auto()
 
 
+def logger(method: F) -> F:
+    """For non-memoized functions that we want to be logged.
 
-class ParserBase(Parser):
+    (In practice this is only non-leader left-recursive functions.)
+    """
+    method_name = method.__name__
+
+    def logger_wrapper(self: P, *args: object) -> F:
+        if not self._verbose:
+            return method(self, *args)
+        argsr = ",".join(repr(arg) for arg in args)
+        fill = "  " * self._level
+        print(f"{fill}{method_name}({argsr}) .... (looking at {self.showpeek()})")
+        self._level += 1
+        tree = method(self, *args)
+        self._level -= 1
+        print(f"{fill}... {method_name}({argsr}) --> {tree!s:.200}")
+        return tree
+
+    logger_wrapper.__wrapped__ = method  # type: ignore
+    return cast(F, logger_wrapper)
+
+
+def memoize(method: F) -> F:
+    """Memoize a symbol method."""
+    method_name = method.__name__
+
+    def memoize_wrapper(self: P, *args: object) -> F:
+        mark = self._mark()
+        key = mark, method_name, args
+        # Fast path: cache hit, and not verbose.
+        if key in self._cache and not self._verbose:
+            tree, endmark = self._cache[key]
+            self._reset(endmark)
+            return tree
+        # Slow path: no cache hit, or verbose.
+        verbose = self._verbose
+        argsr = ",".join(repr(arg) for arg in args)
+        fill = "  " * self._level
+        if key not in self._cache:
+            if verbose:
+                print(f"{fill}{method_name}({argsr}) ... (looking at {self.showpeek()})")
+            self._level += 1
+            tree = method(self, *args)
+            self._level -= 1
+            if verbose:
+                print(f"{fill}... {method_name}({argsr}) -> {tree!s:.200}")
+            endmark = self._mark()
+            self._cache[key] = tree, endmark
+        else:
+            tree, endmark = self._cache[key]
+            if verbose:
+                print(f"{fill}{method_name}({argsr}) -> {tree!s:.200}")
+            self._reset(endmark)
+        return tree
+
+    memoize_wrapper.__wrapped__ = method  # type: ignore
+    return cast(F, memoize_wrapper)
+
+
+def memoize_left_rec(method: Callable[[P], Optional[T]]) -> Callable[[P], Optional[T]]:
+    """Memoize a left-recursive symbol method."""
+    method_name = method.__name__
+
+    def memoize_left_rec_wrapper(self: P) -> Optional[T]:
+        mark = self._mark()
+        key = mark, method_name, ()
+        # Fast path: cache hit, and not verbose.
+        if key in self._cache and not self._verbose:
+            tree, endmark = self._cache[key]
+            self._reset(endmark)
+            return tree
+        # Slow path: no cache hit, or verbose.
+        verbose = self._verbose
+        fill = "  " * self._level
+        if key not in self._cache:
+            if verbose:
+                print(f"{fill}{method_name} ... (looking at {self.showpeek()})")
+            self._level += 1
+
+            # For left-recursive rules we manipulate the cache and
+            # loop until the rule shows no progress, then pick the
+            # previous result.  For an explanation why this works, see
+            # https://github.com/PhilippeSigaud/Pegged/wiki/Left-Recursion
+            # (But we use the memoization cache instead of a static
+            # variable; perhaps this is similar to a paper by Warth et al.
+            # (http://web.cs.ucla.edu/~todd/research/pub.php?id=pepm08).
+
+            # Prime the cache with a failure.
+            self._cache[key] = None, mark
+            lastresult, lastmark = None, mark
+            depth = 0
+            if verbose:
+                print(f"{fill}Recursive {method_name} at {mark} depth {depth}")
+
+            while True:
+                self._reset(mark)
+                self.in_recursive_rule += 1
+                try:
+                    result = method(self)
+                finally:
+                    self.in_recursive_rule -= 1
+                endmark = self._mark()
+                depth += 1
+                if verbose:
+                    print(
+                        f"{fill}Recursive {method_name} at {mark} depth {depth}: {result!s:.200} to {endmark}"
+                    )
+                if not result:
+                    if verbose:
+                        print(f"{fill}Fail with {lastresult!s:.200} to {lastmark}")
+                    break
+                if endmark <= lastmark:
+                    if verbose:
+                        print(f"{fill}Bailing with {lastresult!s:.200} to {lastmark}")
+                    break
+                self._cache[key] = lastresult, lastmark = result, endmark
+
+            self._reset(lastmark)
+            tree = lastresult
+
+            self._level -= 1
+            if verbose:
+                print(f"{fill}{method_name}() -> {tree!s:.200} [cached]")
+            if tree:
+                endmark = self._mark()
+            else:
+                endmark = mark
+                self._reset(endmark)
+            self._cache[key] = tree, endmark
+        else:
+            tree, endmark = self._cache[key]
+            if verbose:
+                print(f"{fill}{method_name}() -> {tree!s:.200} [fresh]")
+            if tree:
+                self._reset(endmark)
+        return tree
+
+    memoize_left_rec_wrapper.__wrapped__ = method  # type: ignore
+    return memoize_left_rec_wrapper
+
+
+class Parser(ABC):
+    """Parsing base class."""
+
+    KEYWORDS: ClassVar[Tuple[str, ...]]
+
+    SOFT_KEYWORDS: ClassVar[Tuple[str, ...]]
 
     #: Name of the source file, used in error reports
-    filename : str
+    filename: str
 
-    def __init__(self,
-        tokenizer: Tokenizer, *,
+    def __init__(
+        self,
+        tokenizer: Tokenizer,
+        *,
         verbose: bool = False,
         filename: str = "<unknown>",
         py_version: Optional[tuple] = None,
-    ) -> None:
-        super().__init__(tokenizer, verbose=verbose)
+    ):
+        self._tokenizer = tokenizer
+        self._verbose = verbose
+        self._level = 0
+        self._cache: Dict[Tuple[Mark, str, Tuple[Any, ...]], Tuple[Any, Mark]] = {}
+
+        # Integer tracking wether we are in a left recursive rule or not. Can be useful
+        # for error reporting.
+        self.in_recursive_rule = 0
+
+        # Pass through common tokenizer methods.
+        self._mark = self._tokenizer.mark
+        self._reset = self._tokenizer.reset
+
+        # Are we looking for syntax error ? When true enable matching on invalid rules
+        self.call_invalid_rules = False
+
         self.filename = filename
         self.py_version = min(py_version, sys.version_info) if py_version else sys.version_info
 
+    @abstractmethod
+    def start(self) -> Any:
+        """Expected grammar entry point.
+
+        This is not strictly necessary but is assumed to exist in most utility
+        functions consuming parser instances.
+
+        """
+        pass
+
+    def showpeek(self) -> str:
+        tok = self._tokenizer.peek()
+        return f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
+
+    @memoize
+    def name(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.NAME and tok.string not in self.KEYWORDS:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def number(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.NUMBER:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def string(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.STRING:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def op(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.OP:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def type_comment(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.TYPE_COMMENT:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def soft_keyword(self) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.type == token.NAME and tok.string in self.SOFT_KEYWORDS:
+            return self._tokenizer.getnext()
+        return None
+
+    @memoize
+    def expect(self, type: str) -> Optional[tokenize.TokenInfo]:
+        tok = self._tokenizer.peek()
+        if tok.string == type:
+            return self._tokenizer.getnext()
+        if type in exact_token_types:
+            if tok.type == exact_token_types[type]:
+                return self._tokenizer.getnext()
+        if type in token.__dict__:
+            if tok.type == token.__dict__[type]:
+                return self._tokenizer.getnext()
+        if tok.type == token.OP and tok.string == type:
+            return self._tokenizer.getnext()
+        return None
+
+    def expect_forced(self, res: Any, expectation: str) -> Optional[tokenize.TokenInfo]:
+        if res is None:
+            last_token = self._tokenizer.diagnose()
+            self.raise_raw_syntax_error(
+                f"expected {expectation}", last_token.start, last_token.start
+            )
+        return res
+
+    def positive_lookahead(self, func: Callable[..., T], *args: object) -> T:
+        mark = self._mark()
+        ok = func(*args)
+        self._reset(mark)
+        return ok
+
+    def negative_lookahead(self, func: Callable[..., object], *args: object) -> bool:
+        mark = self._mark()
+        ok = func(*args)
+        self._reset(mark)
+        return not ok
+
+    def make_syntax_error(self, message: str) -> SyntaxError:
+        return self._build_syntax_error(message)
+
+    # parser specific methods
     def parse(self, rule: str, call_invalid_rules: bool = False) -> Optional[ast.AST]:
         old = self.call_invalid_rules
         self.call_invalid_rules = call_invalid_rules
         res = getattr(self, rule)()
 
         if res is None:
-
             # Grab the last token that was parsed in the first run to avoid
             # polluting a generic error reports with progress made by invalid rules.
             last_token = self._tokenizer.diagnose()
@@ -97,61 +377,40 @@ class ParserBase(Parser):
 
     @classmethod
     def parse_file(
-            cls,
-            path: str,
-            py_version: Optional[tuple] = None,
-            token_stream_factory: Optional[
-                Callable[[Callable[[], str]], Iterator[tokenize.TokenInfo]]
-            ] = None,
-            verbose: bool = False,
+        cls,
+        path: str,
+        py_version: Optional[tuple] = None,
+        verbose: bool = False,
     ) -> ast.Module:
         """Parse a file."""
         with open(path) as f:
-            tok_stream = (
-                token_stream_factory(f.readline)
-                if token_stream_factory else
-                tokenize.generate_tokens(f.readline)
-            )
+            tok_stream = tokenize.generate_tokens(f.readline)
             tokenizer = Tokenizer(tok_stream, verbose=verbose, path=path)
             parser = cls(
-                tokenizer,
-                verbose=verbose,
-                filename=os.path.basename(path),
-                py_version=py_version
+                tokenizer, verbose=verbose, filename=os.path.basename(path), py_version=py_version
             )
             return parser.parse("file")
 
     @classmethod
     def parse_string(
-            cls,
-            source: str,
-            mode: Union[Literal["eval"], Literal["exec"]],
-            py_version: Optional[tuple] = None,
-            token_stream_factory: Optional[
-                Callable[[Callable[[], str]], Iterator[tokenize.TokenInfo]]
-            ] = None,
-            verbose: bool = False,
+        cls,
+        source: str,
+        mode: Literal["eval", "exec"],
+        py_version: Optional[tuple] = None,
+        verbose: bool = False,
     ) -> Any:
         """Parse a string."""
-        tok_stream = (
-            token_stream_factory(io.StringIO(source).readline)
-            if token_stream_factory else
-            tokenize.generate_tokens(io.StringIO(source).readline)
-        )
+        tok_stream = tokenize.generate_tokens(io.StringIO(source).readline)
         tokenizer = Tokenizer(tok_stream, verbose=verbose)
         parser = cls(tokenizer, verbose=verbose, py_version=py_version)
         return parser.parse(mode if mode == "eval" else "file")
 
     def check_version(self, min_version: Tuple[int, ...], error_msg: str, node: Node) -> Node:
-        """Check that the python version is high enough for a rule to apply.
-
-        """
+        """Check that the python version is high enough for a rule to apply."""
         if self.py_version >= min_version:
             return node
         else:
-            raise SyntaxError(
-                f"{error_msg} is only supported in Python {min_version} and above."
-            )
+            raise SyntaxError(f"{error_msg} is only supported in Python {min_version} and above.")
 
     def raise_indentation_error(self, msg: str) -> None:
         """Raise an indentation error."""
@@ -229,13 +488,17 @@ class ParserBase(Parser):
     def ensure_real(self, number: ast.Constant):
         value = ast.literal_eval(number.string)
         if type(value) is complex:
-            self.raise_syntax_error_known_location("real number required in complex literal", number)
+            self.raise_syntax_error_known_location(
+                "real number required in complex literal", number
+            )
         return value
 
-    def ensure_imaginary(self, number:  ast.Constant):
+    def ensure_imaginary(self, number: ast.Constant):
         value = ast.literal_eval(number.string)
         if type(value) is not complex:
-            self.raise_syntax_error_known_location("imaginary number required in complex literal", number)
+            self.raise_syntax_error_known_location(
+                "imaginary number required in complex literal", number
+            )
         return value
 
     def generate_ast_for_string(self, tokens):
@@ -249,7 +512,7 @@ class ParserBase(Parser):
             n_line = t.start[0] - line
             if n_line:
                 col_offset = 0
-            source += "\n" * n_line + ' ' * (t.start[1] - col_offset) + t.string
+            source += "\n" * n_line + " " * (t.start[1] - col_offset) + t.string
             line, col_offset = t.end
         source += "\n)"
         try:
@@ -291,10 +554,7 @@ class ParserBase(Parser):
                 level += 3
         return level
 
-    def set_decorators(self,
-        target: FC,
-        decorators: list
-    ) -> FC:
+    def set_decorators(self, target: FC, decorators: list) -> FC:
         """Set the decorators on a function or class definition."""
         target.decorator_list = decorators
         return target
@@ -310,31 +570,30 @@ class ParserBase(Parser):
             arg.type_comment = type_comment
         return arg
 
-    def make_arguments(self,
+    def make_arguments(
+        self,
         pos_only: Optional[List[Tuple[ast.arg, None]]],
         pos_only_with_default: List[Tuple[ast.arg, Any]],
         param_no_default: Optional[List[Tuple[ast.arg, None]]],
         param_default: Optional[List[Tuple[ast.arg, Any]]],
-        after_star: Optional[Tuple[Optional[ast.arg], List[Tuple[ast.arg, Any]], Optional[ast.arg]]]
+        after_star: Optional[
+            Tuple[Optional[ast.arg], List[Tuple[ast.arg, Any]], Optional[ast.arg]]
+        ],
     ) -> ast.arguments:
         """Build a function definition arguments."""
         defaults = (
-            [d for _, d in pos_only_with_default if d is not None]
-            if pos_only_with_default else
-            []
+            [d for _, d in pos_only_with_default if d is not None] if pos_only_with_default else []
         )
-        defaults += (
-            [d for _, d in param_default if d is not None]
-            if param_default else
-            []
-        )
+        defaults += [d for _, d in param_default if d is not None] if param_default else []
 
         pos_only = pos_only or pos_only_with_default
 
         # Because we need to combine pos only with and without default even
         # the version with no default is a tuple
         pos_only = [p for p, _ in pos_only]
-        params = (param_no_default or []) + ([p for p, _ in param_default] if param_default else [])
+        params = (param_no_default or []) + (
+            [p for p, _ in param_default] if param_default else []
+        )
 
         # If after_star is None, make a default tuple
         after_star = after_star or (None, [], None)
@@ -346,15 +605,15 @@ class ParserBase(Parser):
             vararg=after_star[0],
             kwonlyargs=[p for p, _ in after_star[1]],
             kw_defaults=[d for _, d in after_star[1]],
-            kwarg=after_star[2]
+            kwarg=after_star[2],
         )
 
     def _build_syntax_error(
         self,
         message: str,
         start: Optional[Tuple[int, int]] = None,
-        end: Optional[Tuple[int, int]] = None
-    ) -> None:
+        end: Optional[Tuple[int, int]] = None,
+    ) -> SyntaxError:
         line_from_token = start is None and end is None
         if start is None or end is None:
             tok = self._tokenizer.diagnose()
@@ -365,9 +624,7 @@ class ParserBase(Parser):
             line = tok.line
         else:
             # End is used only to get the proper text
-            line = "\\n".join(
-                self._tokenizer.get_lines(list(range(start[0], end[0] + 1)))
-            )
+            line = "\\n".join(self._tokenizer.get_lines(list(range(start[0], end[0] + 1))))
 
         # tokenize.py index column offset from 0 while Cpython index column
         # offset at 1 when reporting SyntaxError, so we need to increment
@@ -382,20 +639,9 @@ class ParserBase(Parser):
         self,
         message: str,
         start: Optional[Tuple[int, int]] = None,
-        end: Optional[Tuple[int, int]] = None
+        end: Optional[Tuple[int, int]] = None,
     ) -> NoReturn:
         raise self._build_syntax_error(message, start, end)
-
-    def make_syntax_error(self, message: str) -> None:
-        return self._build_syntax_error(message)
-
-    def expect_forced(self, res: Any, expectation: str) -> Optional[tokenize.TokenInfo]:
-        if res is None:
-            last_token = self._tokenizer.diagnose()
-            self.raise_raw_syntax_error(
-                f"expected {expectation}", last_token.start, last_token.start
-            )
-        return res
 
     def raise_syntax_error(self, message: str) -> NoReturn:
         """Raise a syntax error."""
@@ -419,7 +665,7 @@ class ParserBase(Parser):
         self,
         message: str,
         start_node: Union[ast.AST, tokenize.TokenInfo],
-        end_node: Union[ast.AST, tokenize.TokenInfo]
+        end_node: Union[ast.AST, tokenize.TokenInfo],
     ) -> NoReturn:
         if isinstance(start_node, tokenize.TokenInfo):
             start = start_node.start
@@ -434,9 +680,7 @@ class ParserBase(Parser):
         raise self._build_syntax_error(message, start, end)
 
     def raise_syntax_error_starting_from(
-        self,
-        message: str,
-        start_node: Union[ast.AST, tokenize.TokenInfo]
+        self, message: str, start_node: Union[ast.AST, tokenize.TokenInfo]
     ) -> NoReturn:
         if isinstance(start_node, tokenize.TokenInfo):
             start = start_node.start
@@ -461,4 +705,3 @@ class ParserBase(Parser):
             msg = f"cannot delete {self.get_expr_name(invalid_target)}"
 
         self.raise_syntax_error_known_location(msg, invalid_target)
-

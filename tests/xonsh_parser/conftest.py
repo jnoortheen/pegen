@@ -9,7 +9,7 @@ import io
 
 @pytest.fixture(scope="session")
 def parser():
-    grammar_path = Path(__file__).parent.parent.parent / "src/pegen/xsh/xonsh.peg"
+    grammar_path = Path(__file__).parent.parent.parent / "src/xsh_parser/xonsh.peg"
     grammar = build_parser(grammar_path)[0]
 
     out = io.StringIO()
