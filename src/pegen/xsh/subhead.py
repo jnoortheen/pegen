@@ -244,14 +244,14 @@ class ParserBase(Parser):
         line_offset = tokens[0].start[0]
         line = line_offset
         col_offset = 0
-        source = "(\\n"
+        source = "(\n"
         for t in tokens:
             n_line = t.start[0] - line
             if n_line:
                 col_offset = 0
-            source += """\\n""" * n_line + ' ' * (t.start[1] - col_offset) + t.string
+            source += "\n" * n_line + ' ' * (t.start[1] - col_offset) + t.string
             line, col_offset = t.end
-        source += "\\n)"
+        source += "\n)"
         try:
             m = ast.parse(source)
         except SyntaxError as err:

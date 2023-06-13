@@ -3,8 +3,8 @@
 @class XonshParser
 
 @subheader'''
-from pegen.xsh.subhead import ParserBase as Parser, Load, Store, Del
-from typing import Callable, Iterator, Union, Literal, Any, List, Tuple, TypeVar, Union, NoReturn, Optional, Callable, Literal, Iterator
+from pegen.xsh.subhead import ParserBase as Parser, Load, Store, Del, Target
+from typing import List, Tuple, TypeVar, Union, NoReturn, Callable, Literal, Iterator
 import itertools
 
 def parse_file(
