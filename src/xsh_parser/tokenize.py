@@ -28,199 +28,24 @@ import functools
 import io
 import itertools
 import re
-import sys
-import token
-import typing as tp
-from token import (
-    AMPER,
-    AMPEREQUAL,
-    AT,
-    CIRCUMFLEX,
-    CIRCUMFLEXEQUAL,
-    COLON,
-    COLONEQUAL,
-    COMMA,
-    DEDENT,
-    DOT,
-    DOUBLESLASH,
-    DOUBLESLASHEQUAL,
-    DOUBLESTAR,
-    DOUBLESTAREQUAL,
-    ENDMARKER,
-    EQEQUAL,
-    EQUAL,
-    ERRORTOKEN,
-    GREATER,
-    GREATEREQUAL,
-    INDENT,
-    LBRACE,
-    LEFTSHIFT,
-    LEFTSHIFTEQUAL,
-    LESS,
-    LESSEQUAL,
-    LPAR,
-    LSQB,
-    MINEQUAL,
-    MINUS,
-    N_TOKENS,
-    NAME,
-    NEWLINE,
-    NOTEQUAL,
-    NUMBER,
-    OP,
-    PERCENT,
-    PERCENTEQUAL,
-    PLUS,
-    PLUSEQUAL,
-    RBRACE,
-    RIGHTSHIFT,
-    RIGHTSHIFTEQUAL,
-    RPAR,
-    RSQB,
-    SEMI,
-    SLASH,
-    SLASHEQUAL,
-    STAR,
-    STAREQUAL,
-    STRING,
-    TILDE,
-    VBAR,
-    VBAREQUAL,
-    tok_name,
-)
 
+from .tokens import *
 
 cookie_re = re.compile(r"^[ \t\f]*#.*coding[:=][ \t]*([-\w.]+)", re.ASCII)
 blank_re = re.compile(rb"^[ \t\f]*(?:[#\r\n]|$)", re.ASCII)
 
-#
-# token modifications
-#
-tok_name = tok_name.copy()
-__all__ = token.__all__ + [  # type:ignore
-    "COMMENT",
+__all__ = [
     "tokenize",
     "detect_encoding",
-    "NL",
     "untokenize",
-    "ENCODING",
     "TokenInfo",
     "TokenError",
-    "SEARCHPATH",
-    "ATDOLLAR",
-    "ATEQUAL",
-    "DOLLARNAME",
-    "IOREDIRECT",
-    "MATCH",
-    "CASE",
 ]
-del token  # must clean up token
 
 AUGASSIGN_OPS = r"[+\-*/%&@|^=<>:]=?"
-COMMENT = N_TOKENS
-tok_name[COMMENT] = "COMMENT"
-NL = N_TOKENS + 1
-tok_name[NL] = "NL"
-ENCODING = N_TOKENS + 2
-tok_name[ENCODING] = "ENCODING"
-N_TOKENS += 3
-SEARCHPATH = N_TOKENS
-tok_name[N_TOKENS] = "SEARCHPATH"
-N_TOKENS += 1
-IOREDIRECT = N_TOKENS
-tok_name[N_TOKENS] = "IOREDIRECT"
-N_TOKENS += 1
-DOLLARNAME = N_TOKENS
-tok_name[N_TOKENS] = "DOLLARNAME"
-N_TOKENS += 1
-ATDOLLAR = N_TOKENS
-tok_name[N_TOKENS] = "ATDOLLAR"
-N_TOKENS += 1
-ATEQUAL = N_TOKENS
-tok_name[N_TOKENS] = "ATEQUAL"
-N_TOKENS += 1
-MATCH = N_TOKENS
-tok_name[N_TOKENS] = "MATCH"
-N_TOKENS += 1
-CASE = N_TOKENS
-tok_name[N_TOKENS] = "CASE"
-N_TOKENS += 1
-_xonsh_tokens = {
-    "?": "QUESTION",
-    "@=": "ATEQUAL",
-    "@$": "ATDOLLAR",
-    "||": "DOUBLEPIPE",
-    "&&": "DOUBLEAMPER",
-    "@(": "ATLPAREN",
-    "!(": "BANGLPAREN",
-    "![": "BANGLBRACKET",
-    "$(": "DOLLARLPAREN",
-    "$[": "DOLLARLBRACKET",
-    "${": "DOLLARLBRACE",
-    "??": "DOUBLEQUESTION",
-    "@$(": "ATDOLLARLPAREN",
-    "match": "MATCH",
-    "case": "CASE",
-}
+
 
 additional_parenlevs = frozenset({"@(", "!(", "![", "$(", "$[", "${", "@$("})
-
-_glbs = globals()
-for v in _xonsh_tokens.values():
-    _glbs[v] = N_TOKENS
-    tok_name[N_TOKENS] = v
-    N_TOKENS += 1
-    __all__.append(v)
-del _glbs, v
-
-EXACT_TOKEN_TYPES: dict[str, tp.Union[str, int]] = {
-    "(": LPAR,
-    ")": RPAR,
-    "[": LSQB,
-    "]": RSQB,
-    ":": COLON,
-    ",": COMMA,
-    ";": SEMI,
-    "+": PLUS,
-    "-": MINUS,
-    "*": STAR,
-    "/": SLASH,
-    "|": VBAR,
-    "&": AMPER,
-    "<": LESS,
-    ">": GREATER,
-    "=": EQUAL,
-    ".": DOT,
-    "%": PERCENT,
-    "{": LBRACE,
-    "}": RBRACE,
-    "==": EQEQUAL,
-    "!=": NOTEQUAL,
-    "<=": LESSEQUAL,
-    ">=": GREATEREQUAL,
-    "~": TILDE,
-    "^": CIRCUMFLEX,
-    "<<": LEFTSHIFT,
-    ">>": RIGHTSHIFT,
-    "**": DOUBLESTAR,
-    "+=": PLUSEQUAL,
-    "-=": MINEQUAL,
-    "*=": STAREQUAL,
-    "/=": SLASHEQUAL,
-    "%=": PERCENTEQUAL,
-    "&=": AMPEREQUAL,
-    "|=": VBAREQUAL,
-    "^=": CIRCUMFLEXEQUAL,
-    "<<=": LEFTSHIFTEQUAL,
-    ">>=": RIGHTSHIFTEQUAL,
-    "**=": DOUBLESTAREQUAL,
-    "//": DOUBLESLASH,
-    "//=": DOUBLESLASHEQUAL,
-    "@": AT,
-    ":=": COLONEQUAL,
-}
-
-EXACT_TOKEN_TYPES.update(_xonsh_tokens)
 
 
 class TokenInfo(collections.namedtuple("TokenInfo", "type string start end line")):
@@ -932,71 +757,3 @@ def _tokenize(readline, encoding, tolerant=False):
 # library that expect to be able to use tokenize with strings
 def generate_tokens(readline):
     return _tokenize(readline, None)
-
-
-def tokenize_main():
-    import argparse
-
-    # Helper error handling routines
-    def perror(message):
-        print(message, file=sys.stderr)
-
-    def error(message, filename=None, location=None):
-        if location:
-            args = (filename,) + location + (message,)
-            perror("%s:%d:%d: error: %s" % args)
-        elif filename:
-            perror(f"{filename}: error: {message}")
-        else:
-            perror("error: %s" % message)
-        sys.exit(1)
-
-    # Parse the arguments and options
-    parser = argparse.ArgumentParser(prog="python -m tokenize")
-    parser.add_argument(
-        dest="filename",
-        nargs="?",
-        metavar="filename.py",
-        help="the file to tokenize; defaults to stdin",
-    )
-    parser.add_argument(
-        "-e",
-        "--exact",
-        dest="exact",
-        action="store_true",
-        help="display token names using the exact type",
-    )
-    args = parser.parse_args()
-
-    try:
-        # Tokenize the input
-        if args.filename:
-            filename = args.filename
-            with builtins.open(filename, "rb") as f:
-                tokens = list(tokenize(f.readline))
-        else:
-            filename = "<stdin>"
-            tokens = _tokenize(sys.stdin.readline, None)
-
-        # Output the tokenization
-        for token in tokens:
-            token_type = token.type
-            if args.exact:
-                token_type = token.exact_type
-            token_range = "%d,%d-%d,%d:" % (token.start + token.end)
-            print("%-20s%-15s%-15r" % (token_range, tok_name[token_type], token.string))
-    except IndentationError as err:
-        line, column = err.args[1][1:3]
-        error(err.args[0], filename, (line, column))
-    except TokenError as err:
-        line, column = err.args[1]
-        error(err.args[0], filename, (line, column))
-    except SyntaxError as err:
-        error(err, filename)
-    except OSError as err:
-        error(err)
-    except KeyboardInterrupt:
-        print("interrupted\n")
-    except Exception as err:
-        perror("unexpected error: %s" % err)
-        raise
