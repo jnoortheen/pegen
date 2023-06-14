@@ -51,9 +51,9 @@ def parse_invalid_syntax(
     assert message in str(e.exconly())
 
     # Check start/end line/column on Python 3.10
-    for parser, exc in ([("Python", py_exc)] if sys.version_info >= min_python_version else []) + [
-        ("pegen", e.value)
-    ]:
+    for parser, exc in (
+        [("Python", py_exc)] if sys.version_info >= min_python_version else []
+    ) + [("pegen", e.value)]:
         if (
             exc.lineno != start[0]
             or exc.offset != start[1]
@@ -96,7 +96,14 @@ def test_syntax_error_in_str(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -105,8 +112,18 @@ def test_syntax_error_in_str(
     [
         ("(a 1)", "invalid syntax. Perhaps you forgot a comma?", (1, 2), (1, 5)),
         ("2 if 4", "expected 'else' after 'if' expression", (1, 1), (1, 7)),
-        ("(a 1 if b else 2)", "invalid syntax. Perhaps you forgot a comma?", (1, 2), (1, 17)),
-        ("(a lambda: 1)", "invalid syntax. Perhaps you forgot a comma?", (1, 2), (1, 13)),
+        (
+            "(a 1 if b else 2)",
+            "invalid syntax. Perhaps you forgot a comma?",
+            (1, 2),
+            (1, 17),
+        ),
+        (
+            "(a lambda: 1)",
+            "invalid syntax. Perhaps you forgot a comma?",
+            (1, 2),
+            (1, 13),
+        ),
         ("(a b)", "invalid syntax. Perhaps you forgot a comma?", (1, 2), (1, 5)),
         ("print 1", "Missing parentheses in call to 'print'", (1, 1), (1, 8)),
         ("exec 1", "Missing parentheses in call to 'exec'", (1, 1), (1, 7)),
@@ -118,7 +135,14 @@ def test_invalid_expression(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -142,7 +166,14 @@ def test_invalid_statements(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -157,7 +188,12 @@ def test_invalid_statements(
             (1, 6),
         ),
         # NOTE CPython bug, should report 15 as expected (we use None to omit the check)
-        ("f(a for a in b, c)", "Generator expression must be parenthesized", (1, 3), (1, None)),
+        (
+            "f(a for a in b, c)",
+            "Generator expression must be parenthesized",
+            (1, 3),
+            (1, None),
+        ),
         # NOTE CPython bug, should report 20 as expected (we use None to omit the check)
         (
             "f(a for a in b if a, c)",
@@ -179,10 +215,25 @@ def test_invalid_statements(
             (1, 5),
         ),
         # NOTE CPython bug, should report 18 as expected (we use None to omit the check)
-        ("f(a, b for b in c)", "Generator expression must be parenthesized", (1, 6), (1, None)),
+        (
+            "f(a, b for b in c)",
+            "Generator expression must be parenthesized",
+            (1, 6),
+            (1, None),
+        ),
         # NOTE CPython bug, should report 18 as expected (we use None to omit the check)
-        ("f(a, b for b in c, d)", "Generator expression must be parenthesized", (1, 6), (1, None)),
-        ("f(**a, b)", "positional argument follows keyword argument unpacking", (1, 9), (1, 10)),
+        (
+            "f(a, b for b in c, d)",
+            "Generator expression must be parenthesized",
+            (1, 6),
+            (1, None),
+        ),
+        (
+            "f(**a, b)",
+            "positional argument follows keyword argument unpacking",
+            (1, 9),
+            (1, 10),
+        ),
         ("f(a=1, b)", "positional argument follows keyword argument", (1, 9), (1, 10)),
         # Invalid kwarg rules
         (
@@ -253,9 +304,19 @@ def test_invalid_call_arguments(
         ),
         ("{a, b} : set", "illegal target for annotation", (1, 1), (1, 7)),
         ("a + 1 = 2", "cannot assign to expression", (1, 1), (1, 6)),
-        ("[i for i in range(2)] = 2", "cannot assign to list comprehension", (1, 1), (1, 22)),
+        (
+            "[i for i in range(2)] = 2",
+            "cannot assign to list comprehension",
+            (1, 1),
+            (1, 22),
+        ),
         ("yield a = 1", "assignment to yield expression not possible", (1, 1), (1, 8)),
-        ("a = yield b = 1", "assignment to yield expression not possible", (1, 5), (1, 12)),
+        (
+            "a = yield b = 1",
+            "assignment to yield expression not possible",
+            (1, 5),
+            (1, 12),
+        ),
         (
             "a + 1 += 1",
             "'expression' is an illegal expression for augmented assignment",
@@ -281,14 +342,26 @@ def test_invalid_assignments(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
 @pytest.mark.parametrize(
     "source, message, start, end",
     [
-        ("del [i for i in range(2)]", "cannot delete list comprehension", (1, 5), (1, 26)),
+        (
+            "del [i for i in range(2)]",
+            "cannot delete list comprehension",
+            (1, 5),
+            (1, 26),
+        ),
         ("del a + 1", "cannot delete expression", (1, 5), (1, 10)),
     ],
 )
@@ -296,7 +369,14 @@ def test_invalid_del_statements(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -360,7 +440,14 @@ def test_invalid_comprehension(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -416,12 +503,48 @@ def test_invalid_comprehension(
             (1, 10),
             (3, 11),
         ),
-        ("def foo(a,/,/,b,c):\n\tpass", "/ may appear only once", (1, 13), (1, 14), (3, 11)),
-        ("def foo(a,/,a1,/,b,c):\n\tpass", "/ may appear only once", (1, 16), (1, 17), (3, 11)),
-        ("def foo(a=1,/,/,*b,/,c):\n\tpass", "/ may appear only once", (1, 15), (1, 16), (3, 11)),
-        ("def foo(a,/,a1=1,/,b,c):\n\tpass", "/ may appear only once", (1, 18), (1, 19), (3, 11)),
-        ("def foo(a,*b,c,/,d,e):\n\tpass", "/ must be ahead of *", (1, 16), (1, 17), (3, 11)),
-        ("def foo(a=1,*b,c=3,/,d,e):\n\tpass", "/ must be ahead of *", (1, 20), (1, 21), (3, 11)),
+        (
+            "def foo(a,/,/,b,c):\n\tpass",
+            "/ may appear only once",
+            (1, 13),
+            (1, 14),
+            (3, 11),
+        ),
+        (
+            "def foo(a,/,a1,/,b,c):\n\tpass",
+            "/ may appear only once",
+            (1, 16),
+            (1, 17),
+            (3, 11),
+        ),
+        (
+            "def foo(a=1,/,/,*b,/,c):\n\tpass",
+            "/ may appear only once",
+            (1, 15),
+            (1, 16),
+            (3, 11),
+        ),
+        (
+            "def foo(a,/,a1=1,/,b,c):\n\tpass",
+            "/ may appear only once",
+            (1, 18),
+            (1, 19),
+            (3, 11),
+        ),
+        (
+            "def foo(a,*b,c,/,d,e):\n\tpass",
+            "/ must be ahead of *",
+            (1, 16),
+            (1, 17),
+            (3, 11),
+        ),
+        (
+            "def foo(a=1,*b,c=3,/,d,e):\n\tpass",
+            "/ must be ahead of *",
+            (1, 20),
+            (1, 21),
+            (3, 11),
+        ),
         (
             "def foo(a,*b=3,c):\n\tpass",
             "var-positional argument cannot have default value",
@@ -485,7 +608,13 @@ def test_invalid_comprehension(
             (1, 20),
             (3, 11),
         ),
-        ("def foo(*b,*d):\n\tpass", "* argument may appear only once", (1, 12), (1, 13), (3, 11)),
+        (
+            "def foo(*b,*d):\n\tpass",
+            "* argument may appear only once",
+            (1, 12),
+            (1, 13),
+            (3, 11),
+        ),
         (
             "def foo(a,*b,c,*d,*e,c):\n\tpass",
             "* argument may appear only once",
@@ -577,14 +706,56 @@ def test_invalid_comprehension(
             (1, 17),
             (3, 11),
         ),
-        ("lambda /,a,b,c: None", "at least one argument must precede /", (1, 8), (1, 9), (3, 11)),
+        (
+            "lambda /,a,b,c: None",
+            "at least one argument must precede /",
+            (1, 8),
+            (1, 9),
+            (3, 11),
+        ),
         ("lambda a,/,/,b,c: None", "/ may appear only once", (1, 12), (1, 13), (3, 11)),
-        ("lambda a,/,a1,/,b,c: None", "/ may appear only once", (1, 15), (1, 16), (3, 11)),
-        ("lambda a=1,/,/,*b,/,c: None", "/ may appear only once", (1, 14), (1, 15), (3, 11)),
-        ("lambda a,/,a1=1,/,b,c: None", "/ may appear only once", (1, 17), (1, 18), (3, 11)),
-        ("lambda a,*b,c,/,d,e: None", "/ must be ahead of *", (1, 15), (1, 16), (3, 11)),
-        ("lambda a=1,*b,c=3,/,d,e: None", "/ must be ahead of *", (1, 19), (1, 20), (3, 11)),
-        ("lambda a=1,/*,b,c: None", "expected comma between / and *", (1, 13), (1, 14), (3, 11)),
+        (
+            "lambda a,/,a1,/,b,c: None",
+            "/ may appear only once",
+            (1, 15),
+            (1, 16),
+            (3, 11),
+        ),
+        (
+            "lambda a=1,/,/,*b,/,c: None",
+            "/ may appear only once",
+            (1, 14),
+            (1, 15),
+            (3, 11),
+        ),
+        (
+            "lambda a,/,a1=1,/,b,c: None",
+            "/ may appear only once",
+            (1, 17),
+            (1, 18),
+            (3, 11),
+        ),
+        (
+            "lambda a,*b,c,/,d,e: None",
+            "/ must be ahead of *",
+            (1, 15),
+            (1, 16),
+            (3, 11),
+        ),
+        (
+            "lambda a=1,*b,c=3,/,d,e: None",
+            "/ must be ahead of *",
+            (1, 19),
+            (1, 20),
+            (3, 11),
+        ),
+        (
+            "lambda a=1,/*,b,c: None",
+            "expected comma between / and *",
+            (1, 13),
+            (1, 14),
+            (3, 11),
+        ),
         (
             "lambda a,*b=3,c: None",
             "var-positional argument cannot have default value",
@@ -634,7 +805,13 @@ def test_invalid_comprehension(
             (1, 19),
             (3, 11),
         ),
-        ("lambda *b,*d: None", "* argument may appear only once", (1, 11), (1, 12), (3, 11)),
+        (
+            "lambda *b,*d: None",
+            "* argument may appear only once",
+            (1, 11),
+            (1, 12),
+            (3, 11),
+        ),
         (
             "lambda a,*b,c,*d,*e,c: None",
             "* argument may appear only once",
@@ -656,12 +833,31 @@ def test_invalid_comprehension(
             (1, 22),
             (3, 11),
         ),
-        ("lambda a=1,d=,c: None", "expected default value expression", (1, 13), (1, 14), (3, 11)),
-        ("lambda a,d=,c: None", "expected default value expression", (1, 11), (1, 12), (3, 11)),
+        (
+            "lambda a=1,d=,c: None",
+            "expected default value expression",
+            (1, 13),
+            (1, 14),
+            (3, 11),
+        ),
+        (
+            "lambda a,d=,c: None",
+            "expected default value expression",
+            (1, 11),
+            (1, 12),
+            (3, 11),
+        ),
     ],
 )
 def test_invalid_parameters(
-    python_parse_file, python_parse_str, tmp_path, source, message, start, end, py_version
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    message,
+    start,
+    end,
+    py_version,
 ):
     parse_invalid_syntax(
         python_parse_file,
@@ -686,7 +882,9 @@ def test_invalid_parameters(
         ("lambda a, *, **:a", (1, 14), (1, 16)),
     ],
 )
-def test_invalid_star_etc(python_parse_file, python_parse_str, tmp_path, source, start, end):
+def test_invalid_star_etc(
+    python_parse_file, python_parse_str, tmp_path, source, start, end
+):
     parse_invalid_syntax(
         python_parse_file,
         python_parse_str,
@@ -711,7 +909,14 @@ def test_invalid_with_item(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -726,14 +931,26 @@ def test_invalid_for_target(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
 @pytest.mark.parametrize(
     "source, message, start, end",
     [
-        ("a = (1+1 := 2)", "cannot use assignment expressions with expression", (1, 6), (1, 9)),
+        (
+            "a = (1+1 := 2)",
+            "cannot use assignment expressions with expression",
+            (1, 6),
+            (1, 9),
+        ),
         ("a := raise", "invalid syntax", (1, 3), (1, 5)),
     ],
 )
@@ -741,7 +958,14 @@ def test_named_expression(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -752,9 +976,18 @@ def test_named_expression(
         ("a = (**b)", "cannot use double starred expression here", (1, 6), (1, 8)),
     ],
 )
-def test_invalid_group(python_parse_file, python_parse_str, tmp_path, source, message, start, end):
+def test_invalid_group(
+    python_parse_file, python_parse_str, tmp_path, source, message, start, end
+):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -775,7 +1008,14 @@ def test_invalid_import_from_as_names(
     python_parse_file, python_parse_str, tmp_path, source, message, start, end
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, SyntaxError, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        SyntaxError,
+        message,
+        start,
+        end,
     )
 
 
@@ -800,7 +1040,13 @@ def test_invalid_import_from_as_names(
                 sys.version_info < (3, 9), reason="Unsupported syntax on Python 3.8"
             ),
         ),
-        ("with open(a) as f, b as d\npass", SyntaxError, "expected ':'", (1, 26), (1, 26)),
+        (
+            "with open(a) as f, b as d\npass",
+            SyntaxError,
+            "expected ':'",
+            (1, 26),
+            (1, 26),
+        ),
         (
             "\nasync with (open(a) as f, b as d)\npass",
             SyntaxError,
@@ -811,10 +1057,24 @@ def test_invalid_import_from_as_names(
     ],
 )
 def test_invalid_with_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -839,10 +1099,24 @@ def test_invalid_with_stmt(
     ],
 )
 def test_invalid_try_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -900,7 +1174,13 @@ def test_invalid_try_stmt(
             (3, 18),
             (3, 19),
         ),
-        ("try:\n\tpass\nexcept Exception\npass", SyntaxError, "expected ':'", (3, 17), (3, 17)),
+        (
+            "try:\n\tpass\nexcept Exception\npass",
+            SyntaxError,
+            "expected ':'",
+            (3, 17),
+            (3, 17),
+        ),
         (
             "try:\n\tpass\nexcept Exception as e\npass",
             SyntaxError,
@@ -912,10 +1192,24 @@ def test_invalid_try_stmt(
     ],
 )
 def test_invalid_except_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -939,10 +1233,24 @@ def test_invalid_except_stmt(
     ],
 )
 def test_invalid_finally_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, stop
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    stop,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, stop
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        stop,
     )
 
 
@@ -961,10 +1269,24 @@ def test_invalid_finally_stmt(
     ],
 )
 def test_invalid_match_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -983,10 +1305,24 @@ def test_invalid_match_stmt(
     ],
 )
 def test_invalid_case_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1055,10 +1391,24 @@ def test_invalid_case_stmt(
     ],
 )
 def test_invalid_case_pattern(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1076,10 +1426,24 @@ def test_invalid_case_pattern(
     ],
 )
 def test_invalid_if_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1097,10 +1461,24 @@ def test_invalid_if_stmt(
     ],
 )
 def test_invalid_elif_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1118,10 +1496,24 @@ def test_invalid_elif_stmt(
     ],
 )
 def test_invalid_else_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1139,10 +1531,24 @@ def test_invalid_else_stmt(
     ],
 )
 def test_invalid_while_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1174,13 +1580,27 @@ def test_invalid_while_stmt(
     ],
 )
 def test_invalid_for_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
-@pytest.mark.xfail
+
 @pytest.mark.parametrize(
     "source, exception, message, start, end",
     [
@@ -1222,7 +1642,14 @@ def test_invalid_for_stmt(
     ],
 )
 def test_invalid_def_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
         python_parse_file,
@@ -1257,10 +1684,24 @@ def test_invalid_def_stmt(
     ],
 )
 def test_invalid_class_stmt(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )
 
 
@@ -1268,8 +1709,20 @@ def test_invalid_class_stmt(
     "source, exception, message, start, end",
     [
         # NOTE CPython reports 0 as the end offset which looks odd to me
-        ("{a: 1, b}", SyntaxError, "':' expected after dictionary key", (1, 8), (1, None)),
-        ("{a: 1, c: 2, b}", SyntaxError, "':' expected after dictionary key", (1, 14), (1, None)),
+        (
+            "{a: 1, b}",
+            SyntaxError,
+            "':' expected after dictionary key",
+            (1, 8),
+            (1, None),
+        ),
+        (
+            "{a: 1, c: 2, b}",
+            SyntaxError,
+            "':' expected after dictionary key",
+            (1, 14),
+            (1, None),
+        ),
         (
             "{a: 1, b:}",
             SyntaxError,
@@ -1284,7 +1737,13 @@ def test_invalid_class_stmt(
             (1, 11),
             (1, 13),
         ),
-        ("{b:}", SyntaxError, "expression expected after dictionary key and ':'", (1, 3), (1, 4)),
+        (
+            "{b:}",
+            SyntaxError,
+            "expression expected after dictionary key and ':'",
+            (1, 3),
+            (1, 4),
+        ),
         (
             "{b:, c}",
             SyntaxError,
@@ -1309,8 +1768,22 @@ def test_invalid_class_stmt(
     ],
 )
 def test_invalid_dict_key_value(
-    python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+    python_parse_file,
+    python_parse_str,
+    tmp_path,
+    source,
+    exception,
+    message,
+    start,
+    end,
 ):
     parse_invalid_syntax(
-        python_parse_file, python_parse_str, tmp_path, source, exception, message, start, end
+        python_parse_file,
+        python_parse_str,
+        tmp_path,
+        source,
+        exception,
+        message,
+        start,
+        end,
     )

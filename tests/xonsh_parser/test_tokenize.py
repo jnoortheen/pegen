@@ -1541,7 +1541,7 @@ class TestDetectEncoding(TestCase):
 
 class TestTokenize(TestCase):
     def test_tokenize(self):
-        import tokenize as tokenize_module
+        import xsh_parser.tokenize as tokenize_module
 
         encoding = object()
         encoding_used = None
@@ -1549,7 +1549,7 @@ class TestTokenize(TestCase):
         def mock_detect_encoding(readline):
             return encoding, [b"first", b"second"]
 
-        def mock__tokenize(readline, encoding):
+        def mock__tokenize(readline, encoding, tolerant=False):
             nonlocal encoding_used
             encoding_used = encoding
             out = []
