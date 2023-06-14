@@ -4,10 +4,12 @@
 
 
 @header'''
-import sys, ast
-from xsh_parser.parser import Parser, Load, Store, Del, Target, memoize, memoize_left_rec, logger
-from typing import List, Tuple, Union, NoReturn, Literal, Optional, Any
+import ast
 import itertools
+import sys
+from typing import List, Tuple, Union, NoReturn, Literal, Optional, Any
+
+from xsh_parser.parser import Parser, Load, Store, Del, Target, memoize, memoize_left_rec, logger
 
 def parse_file(
     path: str,
@@ -26,6 +28,7 @@ def parse_string(
 ) -> Any:
     """Parse a string."""
     return XonshParser.parse_string(source, mode, py_version, verbose)
+
 '''
 
 
