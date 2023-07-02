@@ -64,6 +64,10 @@ class TokenInfo(collections.namedtuple("TokenInfo", "type string start end line"
         else:
             return self.type
 
+    @property
+    def name(self):
+        return tok_name[self.exact_type]
+
 
 def group(*choices):
     return "(" + "|".join(choices) + ")"
@@ -755,5 +759,5 @@ def _tokenize(readline, encoding, tolerant=False):
 
 # An undocumented, backwards compatible, API for all the places in the standard
 # library that expect to be able to use tokenize with strings
-def generate_tokens(readline):
-    return _tokenize(readline, None)
+def generate_tokens(readline, *, tolerant=False):
+    return _tokenize(readline, encoding=None, tolerant=tolerant)
