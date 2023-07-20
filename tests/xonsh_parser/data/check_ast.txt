@@ -66,3 +66,230 @@ not 0 # not
 42 if True else 65 # if else
 42+5 if 1 == 2 else 65-5 # if else expr
 42 if True else 65 if False else 105 # if else if else
+"hello"[0] # str idx
+"hello"[0:3] # str slice
+"hello"[0:3:1] # str step
+"hello"[:] # str slice all
+"hello"[5:] # str slice upper
+"hello"[:3] # str slice lower
+"hello"[::2] # str slice other
+"hello"[:3:2] # str slice lower other
+"hello"[3::2] # str slice upper other
+"hello"[0:3,0:3] # str 2slice
+"hello"[0:3:1,0:4:2] # str 2step
+"hello"[:,:] # str 2slice all
+"hello"[5:,5:] # str 2slice upper
+"hello"[:3,:3] # str 2slice lower
+"hello"[5:,:3] # str 2slice lower upper
+"hello"[::2,::2] # str 2slice other
+"hello"[:3:2,:3:2] # str 2slice lower other
+"hello"[3::2,3::2] # str 2slice upper other
+"hello"[0:3,0:3,0:3] # str 3slice
+"hello"[0:3:1,0:4:2,1:3:2] # str 3step
+"hello"[:,:,:] # str 3slice all
+"hello"[5:,5:,5:] # str 3slice upper
+"hello"[:3,:3,:3] # str 3slice lower
+"hello"[5:,:3,:3] # str 3slice upper lower lower
+"hello"[:3,:3,:3] # str 3slice lower lower lower
+"hello"[:3,5:,:3] # str 3slice lower upper lower
+"hello"[:3,5:,5:] # str_3slice_lowerupperupper
+"hello"[5:,5:,:3] # str_3slice_upperlowerlower
+"hello"[5:,:3,5:] # str_3slice_upperlowerupper
+"hello"[5:,5:,:3] # str_3slice_upperupperlower
+"hello"[::2,::2,::2] # str_3slice_other
+"hello"[:3:2,:3:2,:3:2] # str_3slice_lower_other
+"hello"[3::2,3::2,3::2] # str_3slice_upper_other
+"hello"[0:3,True] # str_slice_true
+"hello"[True,0:3] # str_true_slice
+[] # empty_list
+[1,2,3] # list
+[1,2,3,] # list_trailing_comma
+[1] # list_single
+[1,] # list_single_trailing_comma
+[1, 42] # list_two
+[1, 42,] # list_two_trailing_comma
+[1, 42, 3] # list_three
+[1, 42, 3,] # list_three_trailing_comma
+[[1]] # list_nested
+[[1], [2], [3], [4]] # list_nested_four
+[(1,)] # list_tuple_single
+[(1,), (2,), (3,)] # list_tuple_three
+[{(1,)}, {(2,)}, {(3,)}] # list_tuple_nested_three
+[(1,)] # list_tuple_single_trailing_comma
+((1,),) # list_tuple_single_trailing_comma 2
+{1: [2]} # dict_list
+{1: [2],} # dict_list_trailing_comma
+{1: (2,)} # dict_tuple
+{1: (2,),} # dict_tuple_trailing_comma
+{1: [2], 3: [4]} # dict_list_two
+{(1,)} # dict_tuple_single
+{(1,), (2,)} # dict_tuple_two
+() # empty_tuple
+1, # tuple_single
+1, 42 # tuple_two
+1, 42, 65 # tuple_three
+1, 42, 65, # tuple_three_trailing_comma
+(1,) # tuple_single
+(1, 42) # tuple_two
+(1, 42, 65) # tuple_three
+(1, 42, 65,) # tuple_three_trailing_comma
+(), # tuple_empty
+((),),(1,) # tuple_nested
+(),(), # tuple_empty_two
+[], # empty_list
+[],[] # empty_list_two
+[],() # empty_list_tuple
+(),[], # empty_tuple_list
+((),[()],) # tuple_nested_list
+{42} # set_one
+{42,} # set_one_comma
+{42, 65} # set_two
+{42, 65,} # set_two_comma
+{42, 65, 45} # set_three
+{} # dict_empty
+{42: 65} # dict_one
+{42: 65,} # dict_one_comma
+{42: 65, 6: 28} # dict_two
+{42: 65, 6: 28,} # dict_two_comma
+{42: 65, 6: 28, 1: 2} # dict_three
+{**{"x": 2}} # dict_from_dict_one
+{**{"x": 2},} # dict_from_dict_one_comma
+{"x": 1, **{"y": 2}} # dict_from_dict_two_xy
+{"x": 1, **{"x": 2}} # dict_from_dict_two_x_first
+{**{"x": 2}, "x": 1} # dict_from_dict_two_x_second
+{**{"x": 1}, **{"x": 2}} # dict_from_dict_two_x_none
+*range(4), # unpack_range_tuple
+*range(4), 4 # unpack_range_tuple_4
+(*range(4),) # unpack_range_tuple_parens
+(*range(4), 4) # unpack_range_tuple_parens_4
+[*range(4),] # unpack_range_list
+[*range(4), 4] # unpack_range_list_4
+{*range(4)} # unpack_range_set
+{*range(4), 4} # unpack_range_set_4
+True # true
+False # false
+None # none
+... # elipsis
+NotImplemented # not_implemented_name
+(x for x in "mom") # genexpr
+(x for x in "mom" if True) # genexpr_if
+(x for x in "mom" if True and x == "m") # genexpr_if_and
+(x+y for x in "mom" for y in "dad") # dbl_genexpr
+(x+y for x in "mom" if True for y in "dad") # genexpr_if_genexpr
+(x+y for x in "mom" if True and x == "m" for y in "dad") # genexpr_if_genexpr_if
+(x+y for x in "mom" if True for y in "dad" if True) # genexpr_if_genexpr_if 2
+[x for x in "mom"] # listcomp
+[x for x in "mom" if True] # listcomp_if
+[x for x in "mom" if True and x == "m"] # listcomp_if_and
+[x for x in "mom" if True if x in "mo" if x == "m"] # listcomp_multi_if
+[x+y for x in "mom" for y in "dad"] # dbl_listcomp
+[x+y for x in "mom" if True for y in "dad"] # listcomp_if_listcomp
+[x+y for x in "mom" if True and x == "m" for y in "dad"] # listcomp_if_listcomp_if
+{x for x in "mom"} # setcomp
+{x for x in "mom" if True} # setcomp_if
+{x for x in "mom" if True and x == "m"} # setcomp_if_and
+{x+y for x in "mom" for y in "dad"} # dbl_setcomp
+{x+y for x in "mom" if True for y in "dad"} # setcomp_if_setcomp
+{x+y for x in "mom" if True and x == "m" for y in "dad"} # setcomp_if_setcomp_if
+{x: x for x in "mom"} # dictcomp
+{k: v for (k, v) in {"x": 42}.items()} # dictcomp_unpack_parens
+{k: v for k, v in {"x": 42}.items()} # dictcomp_unpack_no_parens
+{x: x for x in "mom" if True} # dictcomp_if
+{x: x for x in "mom" if True and x == "m"} # dictcomp_if_and
+{x+y: x-y for x in "mom" for y in "dad"} # dbl_dictcomp
+{x+y: x-y for x in "mom" if True for y in "dad"} # dictcomp_if_dictcomp
+{x: y for x in "mom" if True for y in "dad" if y == "d"} # dictcomp_if_dictcomp_if
+lambda: 42 # lambda
+lambda x: x # lambda_x
+lambda x=42: x # lambda_kwx
+lambda x, y: x # lambda_x_y
+lambda x, y, z: x # lambda_x_y_z
+lambda x, y=42: x # lambda_x_kwy
+lambda x=65, y=42: x # lambda_kwx_kwy
+lambda x=65, y=42, z=1: x # lambda_kwx_kwy_kwz
+lambda x,: x # lambda_x_comma
+lambda x, y,: x # lambda_x_y_comma
+lambda x, y, z,: x # lambda_x_y_z_comma
+lambda x, y=42,: x # lambda_x_kwy_comma
+lambda x, y=42, z=1,: x # lambda_x_kwy_kwz_comma
+lambda x=65, y=42,: x # lambda_kwx_kwy_comma
+lambda x=65, y=42, z=1,: x # lambda_kwx_kwy_kwz_comma
+lambda *args: 42 # lambda_args
+lambda *args, x: 42 # lambda_args_x
+lambda *args, x, y: 42 # lambda_args_x_y
+lambda *args, x, y=10: 42 # lambda_args_x_kwy
+lambda *args, x=10, y: 42 # lambda_args_kwx_y
+lambda *args, x=42, y=65: 42 # lambda_args_kwx_kwy
+lambda x, *args: 42 # lambda_x_args
+lambda x, *args, y: 42 # lambda_x_args_y
+lambda x, *args, y, z: 42 # lambda_x_args_y_z
+lambda **kwargs: 42 # lambda_kwargs
+lambda x, **kwargs: 42 # lambda_x_kwargs
+lambda x, y, **kwargs: 42 # lambda_x_y_kwargs
+lambda x, y=42, **kwargs: 42 # lambda_x_kwy_kwargs
+lambda *args, **kwargs: 42 # lambda_args_kwargs
+lambda x, *args, **kwargs: 42 # lambda_x_args_kwargs
+lambda x, y, *args, **kwargs: 42 # lambda_x_y_args_kwargs
+lambda x=10, *args, **kwargs: 42 # lambda_kwx_args_kwargs
+lambda x, y=42, *args, **kwargs: 42 # lambda_x_kwy_args_kwargs
+lambda x, *args, y, **kwargs: 42 # lambda_x_args_y_kwargs
+
+lambda x, y=42, *args, **kwargs: 42 # lambda_x_kwy_args_kwargs
+lambda x, *args, y, **kwargs: 42 # lambda_x_args_y_kwargs
+lambda x, *args, y=42, **kwargs: 42 # lambda_x_args_kwy_kwargs
+lambda *args, y, **kwargs: 42 # lambda_args_y_kwargs
+lambda *, x: 42 # lambda_star_x
+lambda *, x, y: 42 # lambda_star_x_y
+lambda *, x, **kwargs: 42 # lambda_star_x_kwargs
+lambda *, x=42, **kwargs: 42 # lambda_star_kwx_kwargs
+lambda x, *, y: 42 # lambda_x_star_y
+lambda x, y, *, z: 42 # lambda_x_y_star_z
+lambda x, y=42, *, z: 42 # lambda_x_kwy_star_y
+lambda x, y=42, *, z=65: 42 # lambda_x_kwy_star_kwy
+lambda x, *, y, **kwargs: 42 # lambda_x_star_y_kwargs
+range(6) # call_range
+range(6,) # call_range_comma
+range(6, 10) # call_range_x_y
+range(6, 10,) # call_range_x_y_comma
+range(6, 10, 2) # call_range_x_y_z
+dict(start=10) # call_dict_kwx
+dict(start=10,) # call_dict_kwx_comma
+dict(start=10, stop=42) # call_dict_kwx_kwy
+tuple(x for x in [1, 2, 3]) # call_tuple_gen
+tuple(x for x in [1, 2, 3] if x < 3) # call_tuple_genifs
+range(*[1, 2, 3]) # call_range_star
+range(1, *[2, 3]) # call_range_x_star
+int(*["42"], base=8) # call int
+int(*["42"], **{"base": 8}) # call int base dict
+dict(**{"base": 8}) # call dict kwargs
+min(*[1, 2], 3, *[4, 5]) # call list many star args
+dict(**{"a": 2}, v=3, **{"c": 5}) # call list many starstar args
+x(*[("a", 2)], *[("v", 3)], **{"c": 5}) # call list many star and starstar args
+x(1, *args, **kwargs) # call alot
+x(x=1, *args, **kwargs) # call alot next
+x(x=1, *args, y=42, **kwargs) # call alot next next
+
+list.append # getattr
+list.append.__str__ # getattr getattr
+
+{(42, 1): 65} # dict tuple key
+{(42, 1): 65}[42, 1] # dict tuple key get
+{(42, 1, 3): 65}[42, 1, 3] # dict tuple key get 3
+
+{42} | {65} # pipe op
+{42} | {65} | {1} # pipe op two
+{42} | {65} | {1} | {7} # pipe op three
+{42} ^ {65} # xor op
+{42} ^ {65} ^ {1} # xor op two
+{42} ^ {65} ^ {1} ^ {7} # xor op three
+{42} ^ {65} | {1} # xor pipe
+{42} & {65} # amp op
+{42} & {65} & {1} # amp op two
+{42} & {65} & {1} & {7} # amp op three
+
+42 << 65 # lshift op
+42 << 65 << 1 # lshift op two
+42 << 65 << 1 << 7 # lshift op three
+42 >> 65 # rshift op
+42 >> 65 >> 1 # rshift op two
+42 >> 65 >> 1 >> 7 # rshift op three
