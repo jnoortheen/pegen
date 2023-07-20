@@ -1,0 +1,68 @@
+b"hell\\o"  # bytes literal with b
+br"hell\\o"  # bytes literal with br
+Br"hell\\o"  # bytes literal with Br
+rB"hell\\o"  # bytes literal with rB
+RB"hell\\o"  # bytes literal with RB
++1  # unary plus
+-1  # unary minus
+~1  # unary invert
+42 + 65  # binop plus
+42 - 65  # binop minus
+42 * 65  # binop times
+x @ y  # binop matmult
+42 / 65  # binop div
+42 % 65  # binop mod
+42 // 65  # binop floordiv
+42 ** 65  # binop pow
+42 << 65  # binop lshift
+42 >> 65  # binop rshift
+42 & 65  # binop and
+42 ^ 65  # binop xor
+42 | 65  # binop or
+42 < 65  # binop lt
+42 <= 65  # binop le
+42 > 65  # binop gt
+42 >= 65  # binop ge
+42 == 65  # binop eq
+42 != 65  # binop ne
+42 + 2 ** 2 # plus pow
+42 + 65 + 6 # plus plus
+42 + 65 - 6 # plus minus
+42 - 65 + 6 # minus plus
+42 - 65 - 6 # minus minus
+42 - 65 + 6 - 28 # minus plus minus
+42 * 65 + 6 # times plus
+42 + 65 * 6 # plus times
+42 * 65 * 6 # times times
+42 * 65 / 6 # times div
+42 * 65 / 6 % 28 # times div mod
+42 * 65 / 6 % 28 // 13 # times div mod floor
+42 * 65 / 6 % 28 // 13 ** 2 # times div mod floor pow
+"hello" 'mom' # str str
+"hello" 'mom'    "wow" # str str str
+"hello" + 'mom' # str plus str
+"hello" * 20 # str times int
+20 * "hello" # int times str
+(42 + 65) * 20 # group plus times
+42 + (65 * 20) # plus group times
+(42) # group
+"4" in "65" # in
+"4" not in "65" # not in
+int is float # is
+float is not int # is not
+42 < 65 < 105 # lt lt
+42 < 65 < 105 < 77 # lt lt lt
+not 0 # not
+1 or 0 # or
+1 or 0 or 42 # or or
+1 and 0 # and
+1 and 0 and 42 # and and
+1 and 0 or 42 # and or
+1 or 0 and 42 # or and
+(1 and 0) and 42 # group and and
+(1 and 0) or 42 # group and or
+(1 or 0) and 42 # group or and
+(1 or 0) or 42 # group or or
+42 if True else 65 # if else
+42+5 if 1 == 2 else 65-5 # if else expr
+42 if True else 65 if False else 105 # if else if else
