@@ -22,7 +22,7 @@ def parse_file(
 
 def parse_string(
     source: str,
-    mode: Literal["eval", "exec"],
+    mode: Literal["eval", "exec"]="eval",
     py_version: Optional[tuple]=None,
     verbose:bool = False,
 ) -> Any:
