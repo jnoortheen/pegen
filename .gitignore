@@ -139,3 +139,5 @@ tests/python_parser/parser_cache/py_parser.py
 
 # Vscode stuff
 .vscode
+
+.DS_Store

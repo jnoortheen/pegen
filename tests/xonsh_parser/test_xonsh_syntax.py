@@ -57,23 +57,26 @@ def test_fstring_adaptor(inp, xsh, exp, monkeypatch):
     assert exp == obs
 
 
-def test_path_literal(check_xonsh_ast):
-    check_xonsh_ast({}, 'p"/foo"', False)
-    check_xonsh_ast({}, 'pr"/foo"', False)
-    check_xonsh_ast({}, 'rp"/foo"', False)
-    check_xonsh_ast({}, 'pR"/foo"', False)
-    check_xonsh_ast({}, 'Rp"/foo"', False)
-
-
-def test_path_fstring_literal(check_xonsh_ast):
-    check_xonsh_ast({}, 'pf"/foo"', False)
-    check_xonsh_ast({}, 'fp"/foo"', False)
-    check_xonsh_ast({}, 'pF"/foo"', False)
-    check_xonsh_ast({}, 'Fp"/foo"', False)
-    check_xonsh_ast({}, 'pf"/foo{1+1}"', False)
-    check_xonsh_ast({}, 'fp"/foo{1+1}"', False)
-    check_xonsh_ast({}, 'pF"/foo{1+1}"', False)
-    check_xonsh_ast({}, 'Fp"/foo{1+1}"', False)
+@pytest.mark.parametrize(
+    "inp",
+    [
+        'p"/foo"',
+        'pr"/foo"',
+        'rp"/foo"',
+        'pR"/foo"',
+        'Rp"/foo"',
+        'pf"/foo"',
+        'fp"/foo"',
+        'pF"/foo"',
+        'Fp"/foo"',
+        'pf"/foo{1+1}"',
+        'fp"/foo{1+1}"',
+        'pF"/foo{1+1}"',
+        'Fp"/foo{1+1}"',
+    ],
+)
+def test_path_literal(check_xonsh_ast, inp):
+    check_xonsh_ast(inp, run=False)
 
 
 @pytest.mark.parametrize(

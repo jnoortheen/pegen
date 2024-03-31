@@ -83,7 +83,7 @@ def check_stmts(check_ast):
 @pytest.fixture
 def check_xonsh_ast(parser):
     def factory(
-        inp,
+        inp: str,
         run=True,
         mode="eval",
         return_obs=False,
