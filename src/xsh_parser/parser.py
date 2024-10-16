@@ -4,31 +4,12 @@ import io
 import os
 import sys
 import token
-from . import tokenize
-from .tokenizer import Tokenizer
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Optional,
-    Tuple,
-    TypeVar,
-    cast,
-    Any,
-    List,
-    Tuple,
-    TypeVar,
-    Union,
-    NoReturn,
-    Optional,
-    Callable,
-    Literal,
-    Iterator,
-)
+from typing import *
 
 from pegen.tokenizer import Mark, Tokenizer, exact_token_types
+from . import tokenize
+from .tokenizer import Tokenizer
 
 T = TypeVar("T")
 P = TypeVar("P", bound="Parser")
@@ -118,7 +99,9 @@ def memoize(method: F) -> F:
         fill = "  " * self._level
         if key not in self._cache:
             if verbose:
-                print(f"{fill}{method_name}({argsr}) ... (looking at {self.showpeek()})")
+                print(
+                    f"{fill}{method_name}({argsr}) ... (looking at {self.showpeek()})"
+                )
             self._level += 1
             tree = method(self, *args)
             self._level -= 1
@@ -254,7 +237,9 @@ class Parser(ABC):
         self.call_invalid_rules = False
 
         self.filename = filename
-        self.py_version = min(py_version, sys.version_info) if py_version else sys.version_info
+        self.py_version = (
+            min(py_version, sys.version_info) if py_version else sys.version_info
+        )
 
     @abstractmethod
     def start(self) -> Any:
@@ -268,7 +253,9 @@ class Parser(ABC):
 
     def showpeek(self) -> str:
         tok = self._tokenizer.peek()
-        return f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
+        return (
+            f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
+        )
 
     @memoize
     def name(self) -> Optional[tokenize.TokenInfo]:
@@ -371,7 +358,9 @@ class Parser(ABC):
 
                 res = getattr(self, rule)()
 
-            self.raise_raw_syntax_error("invalid syntax", last_token.start, last_token.end)
+            self.raise_raw_syntax_error(
+                "invalid syntax", last_token.start, last_token.end
+            )
 
         return res
 
@@ -387,7 +376,10 @@ class Parser(ABC):
             tok_stream = tokenize.generate_tokens(f.readline)
             tokenizer = Tokenizer(tok_stream, verbose=verbose, path=path)
             parser = cls(
-                tokenizer, verbose=verbose, filename=os.path.basename(path), py_version=py_version
+                tokenizer,
+                verbose=verbose,
+                filename=os.path.basename(path),
+                py_version=py_version,
             )
             return parser.parse("file")
 
@@ -405,17 +397,26 @@ class Parser(ABC):
         parser = cls(tokenizer, verbose=verbose, py_version=py_version)
         return parser.parse(mode if mode == "eval" else "file")
 
-    def check_version(self, min_version: Tuple[int, ...], error_msg: str, node: Node) -> Node:
+    def check_version(
+        self, min_version: Tuple[int, ...], error_msg: str, node: Node
+    ) -> Node:
         """Check that the python version is high enough for a rule to apply."""
         if self.py_version >= min_version:
             return node
         else:
-            raise SyntaxError(f"{error_msg} is only supported in Python {min_version} and above.")
+            raise SyntaxError(
+                f"{error_msg} is only supported in Python {min_version} and above."
+            )
 
     def raise_indentation_error(self, msg: str) -> None:
         """Raise an indentation error."""
         last_token = self._tokenizer.diagnose()
-        args = (self.filename, last_token.start[0], last_token.start[1] + 1, last_token.line)
+        args = (
+            self.filename,
+            last_token.start[0],
+            last_token.start[1] + 1,
+            last_token.line,
+        )
         if sys.version_info >= (3, 10):
             args += (last_token.end[0], last_token.end[1] + 1)
         raise IndentationError(msg, args)
@@ -447,7 +448,9 @@ class Parser(ABC):
                 f"(line {node.lineno})."
             )
 
-    def get_invalid_target(self, target: Target, node: Optional[ast.AST]) -> Optional[ast.AST]:
+    def get_invalid_target(
+        self, target: Target, node: Optional[ast.AST]
+    ) -> Optional[ast.AST]:
         """Get the meaningful invalid target for different assignment type."""
         if node is None:
             return None
@@ -501,6 +504,63 @@ class Parser(ABC):
             )
         return value
 
+    def _parse_string(self, source: str) -> ast.Str:
+        prefix = tokenize._compile(tokenize.StringPrefix).match(source).group().lower()
+        if "p" in prefix and "f" in prefix:
+            new_pref = prefix.replace("p", "")
+            value_without_p = new_pref + source[len(prefix) :]
+            try:
+                s = ast.parse(value_without_p)
+            except SyntaxError:
+                s = None
+            if s is None:
+                try:
+                    s = FStringAdaptor(
+                        value_without_p, new_pref, filename=self.lexer.fname
+                    ).run()
+                except SyntaxError as e:
+                    self._set_error(
+                        str(e), self.currloc(lineno=p1.lineno, column=p1.lexpos)
+                    )
+            s = ast.increment_lineno(s, p1.lineno - 1)
+            p[0] = xonsh_call(
+                "__xonsh__.path_literal", [s], lineno=p1.lineno, col=p1.lexpos
+            )
+        elif "p" in prefix:
+            value_without_p = prefix.replace("p", "") + source[len(prefix) :]
+            s = ast.const_str(
+                s=ast.literal_eval(value_without_p),
+                lineno=p1.lineno,
+                col_offset=p1.lexpos,
+            )
+            p[0] = xonsh_call(
+                "__xonsh__.path_literal", [s], lineno=p1.lineno, col=p1.lexpos
+            )
+        elif "f" in prefix:
+            try:
+                s = pyparse(p1.value).body[0].value
+            except SyntaxError:
+                s = None
+            if s is None:
+                try:
+                    s = FStringAdaptor(
+                        p1.value, prefix, filename=self.lexer.fname
+                    ).run()
+                except SyntaxError as e:
+                    self._set_error(
+                        str(e), self.currloc(lineno=p1.lineno, column=p1.lexpos)
+                    )
+            s = ast.increment_lineno(s, p1.lineno - 1)
+            if "r" in prefix:
+                s.is_raw = True
+            p[0] = s
+        else:
+            s = ast.literal_eval(p1.value)
+            is_bytes = "b" in prefix
+            is_raw = "r" in prefix
+            cls = ast.const_bytes if is_bytes else ast.const_str
+            p[0] = cls(s=s, lineno=p1.lineno, col_offset=p1.lexpos, is_raw=is_raw)
+
     def generate_ast_for_string(self, tokens):
         """Generate AST nodes for strings."""
         err_args = None
@@ -516,7 +576,7 @@ class Parser(ABC):
             line, col_offset = t.end
         source += "\n)"
         try:
-            m = ast.parse(source)
+            m = self._parse_string(source)
         except SyntaxError as err:
             args = (err.filename, err.lineno + line_offset - 2, err.offset, err.text)
             if sys.version_info >= (3, 10):
@@ -582,9 +642,13 @@ class Parser(ABC):
     ) -> ast.arguments:
         """Build a function definition arguments."""
         defaults = (
-            [d for _, d in pos_only_with_default if d is not None] if pos_only_with_default else []
+            [d for _, d in pos_only_with_default if d is not None]
+            if pos_only_with_default
+            else []
         )
-        defaults += [d for _, d in param_default if d is not None] if param_default else []
+        defaults += (
+            [d for _, d in param_default if d is not None] if param_default else []
+        )
 
         pos_only = pos_only or pos_only_with_default
 
@@ -624,7 +688,9 @@ class Parser(ABC):
             line = tok.line
         else:
             # End is used only to get the proper text
-            line = "\\n".join(self._tokenizer.get_lines(list(range(start[0], end[0] + 1))))
+            line = "\\n".join(
+                self._tokenizer.get_lines(list(range(start[0], end[0] + 1)))
+            )
 
         # tokenize.py index column offset from 0 while Cpython index column
         # offset at 1 when reporting SyntaxError, so we need to increment
@@ -646,7 +712,9 @@ class Parser(ABC):
     def raise_syntax_error(self, message: str) -> NoReturn:
         """Raise a syntax error."""
         tok = self._tokenizer.diagnose()
-        raise self._build_syntax_error(message, tok.start, tok.end if tok.type != 4 else tok.start)
+        raise self._build_syntax_error(
+            message, tok.start, tok.end if tok.type != 4 else tok.start
+        )
 
     def raise_syntax_error_known_location(
         self, message: str, node: Union[ast.AST, tokenize.TokenInfo]

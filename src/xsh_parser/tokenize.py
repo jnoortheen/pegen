@@ -28,6 +28,7 @@ import functools
 import io
 import itertools
 import re
+from typing import Callable
 
 from .tokens import *
 
@@ -307,6 +308,13 @@ class Untokenizer:
                     self.tokens.append(indent)
                     self.prev_col = len(indent)
                 startline = False
+            elif tok_type == FSTRING_MIDDLE:
+                if "{" in token or "}" in token:
+                    end_line, end_col = end
+                    end = (end_line, end_col + token.count("{") + token.count("}"))
+                    token = re.sub("{", "{{", token)
+                    token = re.sub("}", "}}", token)
+
             self.add_whitespace(start)
             self.tokens.append(token)
             self.prev_row, self.prev_col = end
@@ -349,6 +357,11 @@ class Untokenizer:
             elif startline and indents:
                 toks_append(indents[-1])
                 startline = False
+            elif toknum == FSTRING_MIDDLE:
+                if "{" in tokval or "}" in tokval:
+                    tokval = re.sub("{", "{{", tokval)
+                    tokval = re.sub("}", "}}", tokval)
+
             toks_append(tokval)
 
 
@@ -759,5 +772,9 @@ def _tokenize(readline, encoding, tolerant=False):
 
 # An undocumented, backwards compatible, API for all the places in the standard
 # library that expect to be able to use tokenize with strings
-def generate_tokens(readline, *, tolerant=False):
+def generate_tokens(readline: str | Callable, *, tolerant=False):
+    if isinstance(readline, str):
+        from io import StringIO
+
+        readline = StringIO(readline).readline
     return _tokenize(readline, encoding=None, tolerant=tolerant)
